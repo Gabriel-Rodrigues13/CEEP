@@ -7,40 +7,49 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.forEach
 
-class NotaRepository(private val dao : NotaDao, private val webClient: NotaWebClient) {
+class NotaRepository(private val dao: NotaDao, private val webClient: NotaWebClient) {
 
-    fun buscaTodas() : Flow<List<Nota>>{
+    fun buscaTodas(): Flow<List<Nota>> {
         return dao.buscaTodas()
     }
-    private suspend fun atualizaTodas(){
+
+    private suspend fun atualizaTodas() {
         webClient.buscaTodas()?.let { notas ->
-            val notasSincronizadas = notas.map {nota ->
+            val notasSincronizadas = notas.map { nota ->
                 nota.copy(sincronizada = true)
             }
             dao.salva(notas)
         }
     }
-    fun buscaPorId(id : String): Flow<Nota>{
+
+    fun buscaPorId(id: String): Flow<Nota> {
         return dao.buscaPorId(id)
     }
 
     suspend fun remove(id: String) {
-        dao.remove(id)
-        webClient.remove(id)
+        dao.desativa(id)
+        if (webClient.remove(id)) {
+            dao.remove(id)
+        }
     }
 
     suspend fun salva(nota: Nota) {
         dao.salva(nota)
 
-        if(webClient.salva(nota)){
+        if (webClient.salva(nota)) {
             val notaSincronizada = nota.copy(sincronizada = true)
             dao.salva(notaSincronizada)
         }
     }
 
-    suspend fun sincroniza(){
+    suspend fun sincroniza() {
+        val notasDesativadas = dao.buscaNotasDesativadas().first()
+        notasDesativadas.forEach { notaDesativada ->
+            remove(notaDesativada.id)
+        }
+
         val notasNaoSincronizadas = dao.buscaNaoSincronizadas().first()
-        notasNaoSincronizadas.forEach {notaNaoSincronizada ->
+        notasNaoSincronizadas.forEach { notaNaoSincronizada ->
             salva(notaNaoSincronizada)
         }
     }

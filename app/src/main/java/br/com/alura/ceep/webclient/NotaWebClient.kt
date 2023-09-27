@@ -44,8 +44,14 @@ class NotaWebClient {
         return false
     }
 
-    suspend fun remove(id: String) {
-
+    suspend fun remove(id: String) : Boolean {
+        try {
+            notaService.remove(id)
+            return true
+        }catch (e : Exception){
+            Log.e(TAG, "remove: Falha ao remover nota", e )
+        }
+        return false
     }
 
 
