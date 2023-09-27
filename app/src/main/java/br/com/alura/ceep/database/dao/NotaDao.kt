@@ -24,6 +24,8 @@ interface NotaDao {
     suspend fun remove(id: String)
 
     @Insert(onConflict = REPLACE)
-    suspend fun salva(note : List<Nota>)
+    suspend fun salva(nota : List<Nota>)
+    @Query("SELECT * FROM Nota WHERE sincronizada = 0")
+    fun buscaNaoSincronizadas(): Flow<List<Nota>>
 
 }
